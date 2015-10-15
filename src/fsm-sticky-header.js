@@ -16,7 +16,7 @@
             link: function(scope, element, attributes, control){
                 var header = $(element, this);
                 var clonedHeader = null;
-                var content = $(scope.scrollBody);
+                var content = $(element).closest(scope.scrollBody);
                 var scrollableContainer = $(scope.scrollableContainer);
                 var contentOffset = scope.contentOffset || 0;
     
