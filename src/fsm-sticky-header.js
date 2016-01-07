@@ -36,7 +36,6 @@
 
                 function determineVisibility(){
                     var scrollTop = scrollableContainer.scrollTop() + scope.scrollStop + scrollableContainer.position().top;
-                    console.log(scrollTop);
                     var contentTop = content.offset().top + content.offsetParent().scrollTop() + contentOffset;
                     var contentBottom = contentTop + content.outerHeight(false);
 
