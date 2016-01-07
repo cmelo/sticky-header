@@ -2,12 +2,12 @@
 
 (function(angular){
     var fsm = angular.module('fsm', []);
-    
+
     fsm.directive('fsmStickyHeader', [function(){
         return {
             restrict: 'EA',
             replace: false,
-            scope: { 
+            scope: {
                 scrollBody: '=',
                 scrollStop: '=',
                 scrollableContainer: '=',
@@ -19,7 +19,7 @@
                 var content = $(element).closest(scope.scrollBody);
                 var scrollableContainer = $(scope.scrollableContainer);
                 var contentOffset = scope.contentOffset || 0;
-    
+
                 if (scrollableContainer.length === 0){
                     scrollableContainer = $(window);
                 }
@@ -35,18 +35,19 @@
                 };
 
                 function determineVisibility(){
-                    var scrollTop = scrollableContainer.scrollTop() + scope.scrollStop;
+                    var scrollTop = scrollableContainer.scrollTop() + scope.scrollStop + scrollableContainer.position().top;
+                    console.log(scrollTop);
                     var contentTop = content.offset().top + content.offsetParent().scrollTop() + contentOffset;
                     var contentBottom = contentTop + content.outerHeight(false);
 
                     if ( (scrollTop > contentTop) && (scrollTop < contentBottom) ) {
                         if (!clonedHeader){
-                            createClone();    
+                            createClone();
                             clonedHeader.css({ "visibility": "visible"});
                         }
-                        
+
                         if ( scrollTop < contentBottom && scrollTop > contentBottom - clonedHeader.outerHeight(false) ){
-                            var top = contentBottom - scrollTop + scope.scrollStop - clonedHeader.outerHeight(false);
+                            var top = contentBottom - scrollTop + scope.scrollStop + scrollableContainer.position().top - clonedHeader.outerHeight(false);
                             clonedHeader.css('top', top + 'px');
                         } else {
                             calculateSize();
@@ -72,17 +73,17 @@
                         }
                     }
                 };
-        
+
                 function calculateSize() {
                     clonedHeader.css({
-                        top: scope.scrollStop,
+                        top: scope.scrollStop + scrollableContainer.position().top,
                         width: header.outerWidth(),
                         left: header.offset().left
                     });
-    
+
                     setColumnHeaderSizes();
                 };
-                
+
                 function createClone(){
                     /*
                      * switch place with cloned element, to keep binding intact
@@ -95,10 +96,10 @@
                         position: 'fixed',
                         'z-index': 10000,
                         visibility: 'hidden'
-                    });                
+                    });
                     calculateSize();
-                };          
-        
+                };
+
                 scrollableContainer.on('scroll.fsmStickyHeader', determineVisibility).trigger("scroll");
                 scrollableContainer.on('resize.fsmStickyHeader', determineVisibility);
 
@@ -108,7 +109,7 @@
             }
         };
     }]);
-    
+
     fsm.directive('fsmMenu', ['$location', function ($location) {
         return {
             restrict: 'A',
@@ -295,13 +296,13 @@
 
                 scope.$on('$destroy', function() {
                     menuButton.off('.fsmMenuButton');
-                });                
+                });
             }
         }
     });
-    
+
     fsm.directive('fsmBigData', ['$filter', function ($filter) {
-    
+
         return {
             restrict: 'AE',
             scope: {},
@@ -314,27 +315,27 @@
                 var rightHandExpression = attrs.fsmBigData.split(' of ')[1];
                 var pageSize = parseInt(rightHandExpression.split(' take ')[1], 10);
                 var sourceData = rightHandExpression.split(' take ')[0];
-                
+
                 // Interesting things can be done here with the source object...
                 // var displayGetter = $parse(sourceData);
                 // var displaySetter = displayGetter.assign;
                 // var results = orderBy(displayGetter(scope.$parent), sortColumns);
                 // displaySetter(scope.$parent, results)
-    
+
                 var rawData = [];
                 var sortedData = [];
                 var pagedData = [];
                 var page = $(window);
                 var sortTypes = [ 'None', 'Ascending', 'Descending' ];
                 var sortColumns = [];
-        
+
                 transclude(function (clone, transcludedScope) {
 
                     transcludedScope.sortTypes = sortTypes;
 
                     element.append(clone);
                     transcludedScope[pagedDataName] = pagedData;
-    
+
                     function nextPage() {
                         var dataSlice = sortedData.slice(pageSize * currentPage, (pageSize * (currentPage + 1)));
                         if (dataSlice.length > 0) {
@@ -342,7 +343,7 @@
                             currentPage++;
                         }
                     }
-                    
+
                     function renderData() {
                         if (sortColumns.length){
                             sortedData = orderBy(rawData, sortColumns);
@@ -350,21 +351,21 @@
                         else {
                             sortedData = rawData;
                         }
-    
+
                         pagedData.length = 0;
                         currentPage = 0;
                         nextPage();
                     }
-    
+
                     function addSortColumn(columnName, sortType) {
-                        
+
                         // If this column is currently in the sort stack, remove it.
                         for (var i = 0; i < sortColumns.length; i ++){
                             if (sortColumns[i].indexOf(columnName) > -1) {
                                 sortColumns.splice(i, 1);
                             }
                         }
-                        
+
                         // Push this sort on the top of the stack (aka. array)
                         if (sortType > 0) {
                             var direction = '';
@@ -373,31 +374,31 @@
                             }
                             sortColumns.unshift(direction + columnName);
                         }
-    
+
                         renderData();
                     }
-    
+
                     function onPageScroll() {
                         var s = $(window).scrollTop();
                         var d = $(document).height();
                         var c = $(window).height();
                         var scrollPercent = (s / (d-c));
-    
+
                         if (scrollPercent > 0.98) {
-                            // We use scope.apply here to tell angular about these changes because 
+                            // We use scope.apply here to tell angular about these changes because
                             // they happen outside of angularjs context... we're using jquery here
                             // to figure out when we need to load another page of data.
                             transcludedScope.$apply(nextPage);
                         }
                     }
-        
+
                     transcludedScope.$parent.$watchCollection(sourceData, function (newData) {
                         if (newData){
                             rawData = newData;
                             renderData();
                         }
                     });
-    
+
                     transcludedScope.addSortColumn = addSortColumn;
 
                     page.on('scroll.fsmBigData', onPageScroll).trigger('scroll');
@@ -409,10 +410,10 @@
             }
         };
     }]);
-    
+
     fsm.directive('fsmSort', [function () {
         var sortIconTemplate = '<i class="fa fa-sort"></i>';
-    
+
         return {
             restrict: 'AE',
             replace: false,
@@ -424,18 +425,18 @@
                 columnHeader.append('&nbsp;');
                 columnHeader.append(sortIcon);
                 var currentSortType = 0;
-    
+
                 function swapIcons(){
                     sortIcon.removeClass('fa-sort-desc fa-sort-asc fa-sort');
-    
+
                     var classToAdd = 'fa-sort';
-    
+
                     if (scope.$parent.sortTypes[currentSortType] === 'Ascending'){
                         classToAdd = 'fa-sort-asc';
                     } else if(scope.$parent.sortTypes[currentSortType] === 'Descending') {
                         classToAdd = 'fa-sort-desc';
                     }
-    
+
                     sortIcon.addClass(classToAdd);
                 };
 
@@ -445,14 +446,14 @@
                     if (currentSortType == scope.$parent.sortTypes.length ){
                         currentSortType = 0;
                     }
-    
+
                     scope.$apply( scope.$parent.addSortColumn(columnName, currentSortType) );
-    
+
                     swapIcons();
                 };
-    
+
                 columnHeader.css({ cursor: 'pointer' });
-    
+
                 columnHeader.on('click.fsmSort', applySort);
 
                 columnHeader.on('keydown.fsmSort', function(e) {
